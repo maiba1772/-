@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密钥转换器 - 安全通信工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4361ee, #4cc9f0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #aaa;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 50px;
+            padding: 5px;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab.active {
+            background-color: var(--primary);
+            font-weight: 700;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #4cc9f0;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .result-container {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .result-title {
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #16213e;
+            padding: 0 10px;
+            font-size: 0.9rem;
+            color: #4cc9f0;
+        }
+
+        #sharedLink {
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>密钥转换器</h1>
+            <p class="subtitle">安全的端到端加密通信系统 - 加密你的信息并与好友安全分享</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="crypto">加密解密</div>
+            <div class="tab" data-tab="share">创建专属密语</div>
+            <div class="tab" data-tab="receive">接收专属密语</div>
+        </div>
+
+        <!-- 加密/解密部分 -->
+        <div class="card" id="cryptoCard">
+            <h2>消息加密 & 解密</h2>
+            <div class="input-group">
+                <label for="message">输入文本:</label>
+                <textarea id="message" placeholder="输入要加密的明文或解密的密文..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="key">密钥:</label>
+                <input type="text" id="key" placeholder="输入用于加密/解密的密钥...">
+            </div>
+            
+            <div class="btn-group">
+                <button id="encryptBtn" class="btn btn-primary">加密</button>
+                <button id="decryptBtn" class="btn btn-success">解密</button>
+                <button id="resetBtn" class="btn btn-secondary">重置</button>
+            </div>
+            
+            <div class="result-container">
+                <div class="result-title">结果</div>
+                <div id="cryptoResult"></div>
+            </div>
+        </div>
+
+        <!-- 创建专属密语部分 -->
+        <div class="card" id="shareCard" style="display:none;">
+            <h2>创建专属密语</h2>
+            <div class="input-group">
+                <label for="shareMessage">秘密消息:</label>
+                <textarea id="shareMessage" placeholder="输入你想分享的秘密消息..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="shareKey">加密密钥:</label>
+                <input type="text" id="shareKey" placeholder="输入加密密钥（请安全保管）...">
+            </div>
+            
+            <div class="input-group">
+                <label for="expiry">有效期:</label>
+                <select id="expiry" class="btn btn-secondary">
+                    <option value="1">1天</option>
+                    <option value="3">3天</option>
+                    <option value="7">7天</option>
+                    <option value="0" selected>永久</option>
+                </select>
+            </div>
+            
+            <div class="btn-group">
+                <button id="generateLinkBtn" class="btn btn-primary">生成分享链接</button>
+            </div>
+            
+            <div class="result-container">
+                <div class="result-title">分享链接</div>
+                <div id="shareLink">链接生成后将出现在这里</div>
+            </div>
+        </div>
+
+        <!-- 接收专属密语部分 -->
+        <div class="card" id="receiveCard" style="display:none;">
+            <h2>接收专属密语</h2>
+            <div class="input-group">
+                <label for="sharedLink">密语链接:</label>
+                <input type="text" id="sharedLinkInput" placeholder="粘贴接收到的链接...">
+            </div>
+            
+            <div class="input-group">
+                <label for="receiveKey">解密密钥:</label>
+                <input type="text" id="receiveKey" placeholder="输入共享时提供的密钥...">
+            </div>
+            
+            <div class="btn-group">
+                <button id="decodeLinkBtn" class="btn btn-success">解密消息</button>
+            </div>
+            
+            <div class="result-container">
+                <div class="result-title">解密内容</div>
+                <div id="decodedMessage"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>警告: 该工具使用客户端加密，加密后请妥善保管密钥，丢失无法恢复。</p>
+            <p>技术: 基于AES-256加密算法 | 所有操作均在浏览器中完成，不存储任何信息</p>
+        </div>
+    </div>
+
+    <script>
+        // 标签切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 更新标签状态
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 显示对应内容
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById('cryptoCard').style.display = 'none';
+                document.getElementById('shareCard').style.display = 'none';
+                document.getElementById('receiveCard').style.display = 'none';
+                
+                document.getElementById(tabId + 'Card').style.display = 'block';
+                
+                // 处理接收页面的URL参数
+                if (tabId === 'receive') {
+                    handleUrlParameters();
+                }
+            });
+        });
+
+        // 基础加密功能
+        const encryptMessage = (text, key) => {
+            if (!text || !key) {
+                return {success: false, message: "文本和密钥都不能为空"};
+            }
+            
+            try {
+                const encrypted = CryptoJS.AES.encrypt(text, key).toString();
+                return {success: true, result: encrypted};
+            } catch (e) {
+                return {success: false, message: "加密出错: " + e.message};
+            }
+        };
+
+        const decryptMessage = (text, key) => {
+            if (!text || !key) {
+                return {success: false, message: "文本和密钥都不能为空"};
+            }
+            
+            try {
+                const decrypted = CryptoJS.AES.decrypt(text, key).toString(CryptoJS.enc.Utf8);
+                if (!decrypted) throw new Error("解密失败 - 请检查密钥");
+                return {success: true, result: decrypted};
+            } catch (e) {
+                return {success: false, message: e.message};
+            }
+        };
+
+        // 显示结果
+        const showResult = (elementId, isSuccess, text) => {
+            const element = document.getElementById(elementId);
+            element.textContent = text;
+            element.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
+        };
+
+        // 绑定加密解密按钮
+        document.getElementById('encryptBtn').addEventListener('click', function() {
+            const text = document.getElementById('message').value;
+            const key = document.getElementById('key').value;
+            
+            const result = encryptMessage(text, key);
+            if (result.success) {
+                showResult('cryptoResult', true, "加密成功:\n" + result.result);
+            } else {
+                showResult('cryptoResult', false, "错误: " + result.message);
+            }
+        });
+
+        document.getElementById('decryptBtn').addEventListener('click', function() {
+            const text = document.getElementById('message').value;
+            const key = document.getElementById('key').value;
+            
+            const result = decryptMessage(text, key);
+            if (result.success) {
+                showResult('cryptoResult', true, "解密成功:\n" + result.result);
+            } else {
+                showResult('cryptoResult', false, "错误: " + result.message);
+            }
+        });
+
+        // 重置功能
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('message').value = '';
+            document.getElementById('key').value = '';
+            document.getElementById('cryptoResult').textContent = '';
+        });
+
+        // 生成分享链接
+        document.getElementById('generateLinkBtn').addEventListener('click', function() {
+            const message = document.getElementById('shareMessage').value;
+            const key = document.getElementById('shareKey').value;
+            
+            if (!message || !key) {
+                alert('请输入消息和密钥');
+                return;
+            }
+            
+            const encrypted = encryptMessage(message, key);
+            if (!encrypted.success) {
+                alert('加密失败: ' + encrypted.message);
+                return;
+            }
+            
+            // 生成共享链接
+            const baseUrl = window.location.href.split('?')[0];
+            const sharedLink = `${baseUrl}?type=secret&message=${encodeURIComponent(encrypted.result)}&expiry=${document.getElementById('expiry').value}`;
+            
+            // 显示结果
+            const shareLinkElement = document.getElementById('shareLink');
+            shareLinkElement.textContent = sharedLink;
+            shareLinkElement.style.display = 'block';
+            
+            // 可选：添加到剪贴板
+            navigator.clipboard.writeText(sharedLink).then(() => {
+                shareLinkElement.innerHTML += '<br><small style="color:#2ecc71;margin-top:5px;display:block;">链接已复制到剪贴板</small>';
+            });
+        });
+
+        // 处理URL参数
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const type = urlParams.get('type');
+            const message = urlParams.get('message');
+            
+            if (type === 'secret' && message) {
+                document.getElementById('sharedLinkInput').value = window.location.href;
+                document.getElementById('receiveKey').focus();
+            }
+        }
+
+        // 解密接收到的链接
+        document.getElementById('decodeLinkBtn').addEventListener('click', function() {
+            const input = document.getElementById('sharedLinkInput').value;
+            const key = document.getElementById('receiveKey').value;
+            
+            // 尝试从URL中提取消息参数
+            let encryptedMessage = '';
+            try {
+                const url = new URL(input);
+                encryptedMessage = url.searchParams.get('message');
+                if (!encryptedMessage) {
+                    // 如果URL解析失败，尝试直接使用输入内容
+                    encryptedMessage = input.includes('=') ? input.split('=')[1] : input;
+                }
+            } catch (e) {
+                // 如果不是有效的URL，直接使用输入值
+                encryptedMessage = input;
+            }
+            
+            encryptedMessage = decodeURIComponent(encryptedMessage);
+            
+            // 解密消息
+            const result = decryptMessage(encryptedMessage, key);
+            const resultElement = document.getElementById('decodedMessage');
+            
+            if (result.success) {
+                resultElement.textContent = "解密内容:\n" + result.result;
+                resultElement.style.color = '#2ecc71';
+            } else {
+                resultElement.textContent = "错误: " + result.message;
+                resultElement.style.color = '#e74c3c';
+            }
+        });
+
+        // 初始化页面
+        handleUrlParameters();
+    </script>
+</body>
+</html>
